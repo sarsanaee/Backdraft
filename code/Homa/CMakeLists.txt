@@ -106,6 +106,7 @@ target_compile_options(Homa
     PRIVATE
         -Wall
         -Wextra
+        -g
 )
 set_target_properties(Homa PROPERTIES
     VERSION ${Homa_VERSION}
@@ -163,6 +164,7 @@ target_compile_options(DpdkDriver
     PRIVATE
         -Wall
         -Wextra
+        -g
 )
 
 ################################################################################
@@ -170,10 +172,10 @@ target_compile_options(DpdkDriver
 ################################################################################
 
 add_subdirectory(test)
-
+# 
 # target_compile_options(test
 #     PRIVATE
-#         -lrt
+#         # -lrt
 # )
 
 ################################################################################

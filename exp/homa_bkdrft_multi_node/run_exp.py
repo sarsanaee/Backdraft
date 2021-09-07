@@ -44,7 +44,8 @@ def _stop_everything():
 def run_system_perf_client(conf):
     client_bin = './build/test/dpdk_openloop_test'
     victim = ''
-    req_count = 2000000
+    # req_count = 2000000
+    req_count = 2000
     if 'victim' in conf and conf['victim']:
         victim = '--victim'
         req_count = 1000000
@@ -66,7 +67,7 @@ def run_system_perf_client(conf):
 
 def run_system_perf_server(conf):
     server_bin = './build/test/dpdk_server_system_test'
-    cmd = ("sudo {} 100 --server=1 -v "
+    cmd = ("sudo {} 100 --server=1 -vvv "
             "--vhost-port --iface='--vdev=virtio_user0,path={}' "
             "--dpdk-extra=--no-pci --dpdk-extra='-l' --dpdk-extra='{}' "
             "--dpdk-extra='--file-prefix=mg-{}' --vhost-port-ip={} "
@@ -75,7 +76,7 @@ def run_system_perf_server(conf):
 
     if conf["slow_down"]:
         cmd = "sudo cpulimit -l {} -- {} 100 \
-        --server=1 -v --vhost-port --iface='--vdev=virtio_user0,path={}' \
+        --server=1 -vvv --vhost-port --iface='--vdev=virtio_user0,path={}' \
         --dpdk-extra=--no-pci --dpdk-extra='-l' --dpdk-extra='{}' \
         --dpdk-extra='--file-prefix=mg-{}' --vhost-port-ip={} \
         --vhost-port-mac={}".format(conf["slow_down"], server_bin, conf['path'],
@@ -182,7 +183,7 @@ def main():
               'id': i,
               # 'delay': 100 if i%2==1 else delay 
               'delay': delay,
-              'victim': i == 0,
+              'victim': False # i == 0,
             }
 
             cp = run_system_perf_client(client_conf)
@@ -190,9 +191,9 @@ def main():
             client_process.append(cp)
 
 
-        # client_bin = './build/test/dpdk_openloop_test'
-        # pid = client_process[0].pid
-        # os.execv('/usr/bin/gdb', ['--pid', str(pid), client_bin])
+        client_bin = '../../code/Homa/build/test/dpdk_openloop_test'
+        pid = client_process[0].pid
+        os.execv('/usr/bin/gdb', [client_bin, '--pid', str(pid)])
 
         for i in range(vhost_port_count):
             client_process[i].wait()

@@ -412,25 +412,33 @@ DpdkDriver::Impl::sendPacket(Driver::Packet* packet, IpAddress destination,
 
     // Add the packet to the burst.
     SpinLock::Lock txLock(tx.mutex);
+
+    // if (tx.buffer->length >= tx.buffer->size - 1) {
+    //   rte_eth_tx_buffer_flush(port, 0, tx.buffer);
+    //   return;
+    // }
+
     {
         SpinLock::Lock statsLock(tx.stats.mutex);
         tx.stats.bufferedBytes += rte_pktmbuf_pkt_len(mbuf);
     }
 
-    // rte_eth_tx_burst(port, 0, &mbuf, 1);
-    rte_eth_tx_buffer(port, 0, tx.buffer, mbuf);
-
     // Check if overloaded
-    if (tx.buffer->length > HIGH_WATER) {
+    // std::cout << "before overloading " << tx.buffer->length << std::endl;
+    if (tx.buffer->length + 1 > HIGH_WATER) {
+      // std::cout << "OVERLOADING " << tx.buffer->length << std::endl;
       overloaded = true;
     }
+
+    // rte_eth_tx_burst(port, 0, &mbuf, 1);
+    rte_eth_tx_buffer(port, 0, tx.buffer, mbuf);
 
     // Flush packets now if the driver is not corked.
     if (corked.load() < 1) {
       rte_eth_tx_buffer_flush(port, 0, tx.buffer);
-      if (tx.buffer->length <= LOW_WATER) {
-        overloaded = false;
-      }
+      // if (tx.buffer->length <= LOW_WATER) {
+      //   overloaded = false;
+      // }
     }
 }
 
@@ -787,7 +795,8 @@ DpdkDriver::Impl::_init_vhost()
 
     // Set callback for unsent packets
     pv_tx_data.buffer = tx.buffer;
-    pv_tx_data.stats = &tx.stats;
+    // pv_tx_data.stats = &tx.stats;
+    pv_tx_data.tx = &tx;
     pv_tx_data.port_id = port;
     pv_tx_data.queue_id = 0;
 
@@ -1121,6 +1130,7 @@ DpdkDriver::Impl::txBurstCallback(uint16_t port_id, uint16_t queue,
     (void)port_id;
     (void)queue;
     uint64_t bytesToSend = 0;
+    // std::cout << "txBurstCallback" << std::endl;
     for (uint16_t i = 0; i < nb_pkts; ++i) {
         bytesToSend += rte_pktmbuf_pkt_len(pkts[i]);
     }
@@ -1139,13 +1149,36 @@ void
 DpdkDriver::Impl::bufferUnsentTxPktErrorCallback(struct rte_mbuf **unsent,
     uint16_t count, void *userdata) {
   struct pv_user_data * data = (struct pv_user_data *) userdata;
+  // SpinLock::Lock txLock(data->tx->mutex);
+  SpinLock::Lock lock(data->tx->stats.mutex);
+  // std::cout << "bufferUnsentTxPktErrorCallback" << std::endl;
+
   for (int i = 0; i < count; i++) {
-    // If rte_eth_tx_buffer get full then a flush will be called.
-    // In case of failer in flush this function will be called again.
-    // TODO (Farbod): I am ignoring this case
-    rte_eth_tx_buffer(data->port_id, data->queue_id, data->buffer, unsent[i]);
-    data->stats->bufferedBytes += rte_pktmbuf_pkt_len(unsent[i]);
+    // sent_pkts += rte_eth_tx_buffer(data->port_id, data->queue_id, data->buffer, unsent[i]);
+    data->buffer->pkts[data->buffer->length++] = unsent[i];
+    data->tx->stats.bufferedBytes += rte_pktmbuf_pkt_len(unsent[i]);
+    if (data->buffer->length > data->buffer->size) {
+        std::cout << "something is wrong, with the buffer, we are adding more that expected: " << data->buffer->length << std::endl;
+        break;
+    }
   }
+}
+
+// See Driver::poll()
+void
+DpdkDriver::Impl::poll()
+{
+      SpinLock::Lock txLock(tx.mutex);
+      // if (isOverloaded()) {
+      //   // std::cout << "out " << tx.buffer->length << " " << LOW_WATER << std::endl;
+      // }
+      rte_eth_tx_buffer_flush(port, 0, tx.buffer);
+      if (tx.buffer->length <= LOW_WATER) {
+        if (isOverloaded()) {
+          // std::cout << "in " << tx.buffer->length << " " << LOW_WATER << std::endl;
+          overloaded = false;
+        }
+      }
 }
 
 }  // namespace DPDK

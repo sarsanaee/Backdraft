@@ -161,6 +161,9 @@ class DpdkDriver : public Driver {
     /// See Driver::uncork()
     virtual void uncork();
 
+    /// See Driver::poll()
+    virtual void poll();
+
     /// See Driver::receivePackets()
     virtual uint32_t receivePackets(uint32_t maxPackets,
                                     Packet* receivedPackets[],

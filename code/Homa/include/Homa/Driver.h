@@ -164,6 +164,13 @@ class Driver {
     virtual void uncork() {}
 
     /**
+     * Transmit buffered packets in tx queue periodically.
+     *
+     * @sa Driver::poll(), Driver::sendPacket()
+     */
+    virtual void poll() {}
+
+    /**
      * Check to see if any packets have arrived that have not already been
      * returned by this method; if so, it returns some or all of them. The
      * caller must ensure that Packet objects return by this method are

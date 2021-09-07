@@ -256,10 +256,18 @@ int clientTxWorker(void *_arg)
   uint32_t tag;
   uint32_t counter = 0;
   Homa::OutMessage *message;
+
   for (int i = 0; i < count; i++) {
-    if (args->client->driver.isOverloaded()) {
-      std::cout << "Wow, driver is overloaded!" << std::endl;
-    }
+    start = PerfUtils::Cycles::rdtsc();
+    // while(args->client->driver.isOverloaded()) {
+    //   uint64_t now_t = PerfUtils::Cycles::rdtsc();
+    //   // if ((now_t - start) > 1000000) {
+    //   //   start = PerfUtils::Cycles::rdtsc();
+    //   // }
+    //   // std::cout << "Wow, driver is overloaded!" << now_t << std::endl;
+    // }
+    // args->client->driver.poll();
+    // std::cout << "out " << std::endl;
     // sending on port zero!
     uint64_t id = nextId++;
     size = fbvalue->generate();
@@ -428,6 +436,7 @@ int clientMain(int count, int size, std::vector<Homa::IpAddress> addresses,
     destAddress: addresses[0],
     size_dist: new Fixed(5000),
     ia_dist: new Exponential(0.000055),
+    // ia_dist: new Exponential(0.00008),
     ia_dist_fn: [](Generator *g) -> double {return (g->generate());},
     // ia_dist: new Fixed(1),
     count_message: (size_t)(count * 1.0),

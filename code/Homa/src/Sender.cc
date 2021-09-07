@@ -547,6 +547,8 @@ Sender::poll()
 {
     trySend();
     checkTimeouts();
+    // if (driver->isOverloaded())
+    //    driver->poll();
 }
 
 /**

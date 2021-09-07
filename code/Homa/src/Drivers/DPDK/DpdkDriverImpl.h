@@ -64,7 +64,8 @@ const uint32_t NB_MBUF_RESERVED = 8192;
 const uint32_t NB_LOOPBACK_SLOTS = 4096;
 
 // The number of packets that the driver can buffer while corked.
-const uint16_t MAX_PKT_BURST = 32;
+// const uint16_t MAX_PKT_BURST = 32;
+const uint16_t MAX_PKT_BURST = 128;
 
 /// Size of VLAN tag, in bytes. We are using the PCP (Priority Code Point)
 /// field defined in the VLAN tag to specify the packet priority.
@@ -100,8 +101,8 @@ enum EthPayloadType {
 
 const uint8_t IPPROTO_HOMA = 116;
 
-const uint32_t HIGH_WATER = 20;
-const uint32_t LOW_WATER = 15;
+const uint32_t HIGH_WATER = 15;
+const uint32_t LOW_WATER = 10;
 
 /**
  * Allocated to store packet data when mbufs are not available.
@@ -157,6 +158,7 @@ class DpdkDriver::Impl {
                     int priority);
     void cork();
     void uncork();
+    void poll();
     uint32_t receivePackets(uint32_t maxPackets,
                             Driver::Packet* receivedPackets[],
                             IpAddress sourceAddresses[]);
@@ -273,7 +275,8 @@ class DpdkDriver::Impl {
 
     struct pv_user_data {
       struct rte_eth_dev_tx_buffer * buffer;
-      Tx::Stats* stats;
+      // Tx::Stats* stats;
+      struct Tx* tx;
       uint64_t port_id;
       uint8_t queue_id;
     } pv_tx_data;
@@ -289,7 +292,7 @@ class DpdkDriver::Impl {
     /// Effective network bandwidth, in Mbits/second.
     std::atomic<uint32_t> bandwidthMbps;
 
-    bool overloaded;
+    volatile std::atomic<bool> overloaded;
 };
 
 }  // namespace DPDK

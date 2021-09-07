@@ -70,6 +70,13 @@ DpdkDriver::uncork()
     pImpl->uncork();
 }
 
+/// See Driver::poll()
+void
+DpdkDriver::poll()
+{
+    pImpl->poll();
+}
+
 /// See Driver::receivePackets()
 uint32_t
 DpdkDriver::receivePackets(uint32_t maxPackets, Packet* receivedPackets[],

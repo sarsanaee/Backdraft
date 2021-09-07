@@ -96,6 +96,14 @@ add_executable(dpdk_openloop_test
     ./openloop/util.cc
     ./openloop/log.cc
 )
+
+target_compile_options(dpdk_openloop_test
+    PRIVATE
+    # -Wall
+    # -Wextra
+        -g
+        -O0
+)
 target_link_libraries(dpdk_openloop_test
     PRIVATE
         Dpdk::Dpdk
